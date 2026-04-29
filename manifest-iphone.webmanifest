@@ -1,0 +1,27 @@
+{
+  "name": "Meu Financeiro iPhone",
+  "short_name": "Financeiro",
+  "description": "Painel financeiro pessoal sincronizado para iPhone.",
+  "id": "/app-iphone.html",
+  "start_url": "/app-iphone.html",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#f1f5f9",
+  "theme_color": "#0f766e",
+  "orientation": "portrait",
+  "categories": ["finance", "productivity"],
+  "icons": [
+    {
+      "src": "assets/icons/icon-iphone-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "assets/icons/icon-iphone-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

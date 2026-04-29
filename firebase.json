@@ -1,0 +1,41 @@
+{
+  "hosting": {
+    "public": ".",
+    "ignore": [
+      "firebase.json",
+      "firestore.rules",
+      "README.md",
+      "atualização visual.html",
+      "node_modules/**",
+      "tests/**",
+      "package.json",
+      "package-lock.json",
+      ".git/**",
+      ".firebase/**",
+      "**/.*",
+      "**/__pycache__/**",
+      "serve_local.py",
+      "iniciar-painel-local.bat"
+    ],
+    "headers": [
+      {
+        "source": "**/*.@(js|css|html|webmanifest)",
+        "headers": [
+          {
+            "key": "Cache-Control",
+            "value": "no-cache"
+          }
+        ]
+      }
+    ],
+    "rewrites": [
+      {
+        "source": "**",
+        "destination": "/dinheiro.html"
+      }
+    ]
+  },
+  "firestore": {
+    "rules": "firestore.rules"
+  }
+}

@@ -1,0 +1,1179 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <title>Meu Painel Financeiro</title>
+    <meta name="description" content="Painel financeiro pessoal para controlar renda, contas, cartões, reservas e planejamento mensal.">
+    <meta name="theme-color" content="#111827">
+    <meta name="application-name" content="Meu Financeiro">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-title" content="Financeiro">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="manifest" href="manifest-pc.webmanifest">
+    <link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png">
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230d9488'/%3E%3Cpath d='M14 21c0-2.2 1.8-4 4-4h28c2.2 0 4 1.8 4 4v22c0 2.2-1.8 4-4 4H18c-2.2 0-4-1.8-4-4V21Z' fill='white'/%3E%3Cpath d='M14 26h36v9H14z' fill='%23ccfbf1'/%3E%3Ccircle cx='42' cy='35' r='3' fill='%230f766e'/%3E%3C/svg%3E">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="assets/css/styles.css?v=20260429-pwa-fix2">
+    <script>
+        tailwind.config = {
+            safelist: [
+                'text-green-700',
+                'text-red-700',
+                'text-red-600',
+                'text-slate-800',
+                'text-yellow-700',
+                'text-blue-700',
+                'bg-green-500',
+                'bg-red-500',
+                'bg-yellow-400',
+                'bg-blue-500',
+                'bg-purple-500',
+                'bg-brand-50',
+                'text-brand-700',
+                'hover:text-brand-700',
+                'bg-blue-100',
+                'text-blue-800',
+                'bg-yellow-100',
+                'text-yellow-800',
+                'bg-emerald-100',
+                'text-emerald-800',
+                'bg-amber-100',
+                'text-amber-800',
+                'bg-slate-200',
+                'text-slate-700',
+                'border',
+                'border-slate-200'
+            ],
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#eef2ff',
+                            500: '#6366f1',
+                            600: '#4f46e5',
+                            700: '#4338ca',
+                            900: '#312e81'
+                        }
+                    }
+                }
+            }
+        };
+    </script>
+</head>
+<body class="app-shell bg-slate-100 min-h-screen text-slate-800">
+    <nav class="topbar">
+        <div class="topbar-shell max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="topbar-inner flex flex-col gap-4 py-4 md:flex-row md:items-center md:justify-between">
+                <div class="topbar-copy flex items-start gap-3">
+                    <span class="app-icon topbar-app-icon">
+                        <i class="fa-solid fa-wallet"></i>
+                    </span>
+                    <div class="topbar-heading">
+                        <p class="topbar-eyebrow">Painel financeiro pessoal</p>
+                        <h1 class="topbar-title">Meu Financeiro</h1>
+                        <p class="topbar-subtitle">Receitas, contas, cartoes e reservas em uma unica visao.</p>
+                    </div>
+                </div>
+
+                <div class="toolbar-actions">
+                    <label class="sr-only" for="month-filter">Mês de análise</label>
+                    <input id="month-filter" type="month" class="month-control" aria-label="Mês de análise">
+
+                    <div class="toolbar-meta">
+                        <span id="sync-status" class="sync-pill">Verificando conta</span>
+                        <span id="auth-user-email" class="auth-user-pill hidden"></span>
+                        <button id="auth-sign-out" class="toolbar-text-button hidden" type="button">
+                            <i class="fa-solid fa-right-from-bracket"></i>
+                            <span>Sair</span>
+                        </button>
+                    </div>
+
+                    <a class="toolbar-text-button" href="app-pc.html" title="Abrir app para PC">
+                        <i class="fa-solid fa-desktop"></i>
+                        <span>PC</span>
+                    </a>
+
+                    <a class="toolbar-text-button" href="app-iphone.html" title="Abrir app para iPhone">
+                        <i class="fa-solid fa-mobile-screen-button"></i>
+                        <span>iPhone</span>
+                    </a>
+
+                    <button id="theme-toggle" class="toolbar-button" type="button" title="Alternar modo claro e escuro" aria-label="Alternar modo claro e escuro">
+                        <i class="fa-solid fa-moon"></i>
+                    </button>
+
+                    <button id="export-json" class="toolbar-button" type="button" title="Exportar dados" aria-label="Exportar dados">
+                        <i class="fa-solid fa-file-export"></i>
+                    </button>
+
+                    <label class="toolbar-button cursor-pointer" for="import-json" title="Importar dados" aria-label="Importar dados">
+                        <i class="fa-solid fa-file-import"></i>
+                    </label>
+                    <input id="import-json" type="file" accept="application/json" class="hidden">
+
+                    <button id="clear-data" class="toolbar-button danger" type="button" title="Limpar dados" aria-label="Limpar dados">
+                        <i class="fa-solid fa-trash-can"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="tabbar-wrap">
+        <div class="sidebar-shell max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="sidebar-brand">
+                <span class="app-icon">
+                    <i class="fa-solid fa-wallet"></i>
+                </span>
+                <div>
+                    <p class="sidebar-eyebrow">Controle pessoal</p>
+                    <h2 class="sidebar-title">Meu Financeiro</h2>
+                </div>
+            </div>
+
+            <div class="sidebar-note">
+                <span class="sidebar-chip">Painel ativo</span>
+                <p>Organize seu mes com clareza e acompanhe cada movimento.</p>
+            </div>
+
+            <div class="tabbar" role="tablist" aria-label="Navegação do painel">
+                <button class="tab-button active" type="button" data-tab="dashboard">
+                    <i class="fa-solid fa-chart-pie"></i>
+                    <span>Painel</span>
+                </button>
+                <button class="tab-button" type="button" data-tab="profile">
+                    <i class="fa-solid fa-user"></i>
+                    <span>Perfil</span>
+                </button>
+                <button class="tab-button" type="button" data-tab="reserve">
+                    <i class="fa-solid fa-piggy-bank"></i>
+                    <span>Reserva</span>
+                </button>
+                <button class="tab-button" type="button" data-tab="planned">
+                    <i class="fa-solid fa-calendar-check"></i>
+                    <span>Contas</span>
+                </button>
+                <button class="tab-button" type="button" data-tab="cards">
+                    <i class="fa-solid fa-credit-card"></i>
+                    <span>Cartões</span>
+                </button>
+                <button class="tab-button" type="button" data-tab="investments">
+                    <i class="fa-solid fa-coins"></i>
+                    <span>Investimentos</span>
+                </button>
+                <button class="tab-button" type="button" data-tab="planning">
+                    <i class="fa-solid fa-route"></i>
+                    <span>Planejamento</span>
+                </button>
+                <button class="tab-button" type="button" data-tab="simulator">
+                    <i class="fa-solid fa-sliders"></i>
+                    <span>Simulador</span>
+                </button>
+            </div>
+
+            <div class="sidebar-profile-card">
+                <div class="sidebar-profile-icon">
+                    <i class="fa-solid fa-user"></i>
+                </div>
+                <div>
+                    <strong>Rotina financeira</strong>
+                    <span>Historico, cartoes e planejamento no mesmo painel.</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <main class="main-panel max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <section class="tab-panel active" data-panel="dashboard">
+            <section class="month-overview mb-6">
+                <div class="month-overview-main">
+                    <span id="overview-status" class="status-badge neutral">Sem dados</span>
+                    <h2 id="month-overview-title">Resumo do mês</h2>
+                    <p id="month-overview-subtitle">Cadastre sua renda, contas e cartões para acompanhar o mês com clareza.</p>
+                    <div class="quick-actions" aria-label="Ações rápidas">
+                        <button type="button" class="quick-action-button" data-quick-tab="dashboard" data-focus="transaction-form-card">
+                            <i class="fa-solid fa-plus"></i>
+                            <span>Nova transação</span>
+                        </button>
+                        <button type="button" class="quick-action-button" data-quick-tab="planned">
+                            <i class="fa-solid fa-calendar-check"></i>
+                            <span>Ver contas</span>
+                        </button>
+                        <button type="button" class="quick-action-button" data-quick-tab="cards">
+                            <i class="fa-solid fa-credit-card"></i>
+                            <span>Cartões</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="overview-metrics">
+                    <article>
+                        <span>Próximo vencimento</span>
+                        <strong id="overview-next-due">Nenhum</strong>
+                    </article>
+                    <article>
+                        <span>Faturas do mês</span>
+                        <strong id="overview-card-bill">R$ 0,00</strong>
+                    </article>
+                    <article>
+                        <span>Reservas</span>
+                        <strong id="overview-reserve">R$ 0,00</strong>
+                    </article>
+                </div>
+            </section>
+
+            <section class="dashboard-summary-grid grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-5 mb-6" aria-label="Resumo financeiro">
+                <article class="summary-card border-green-500">
+                    <div>
+                        <p class="summary-label">Entradas</p>
+                        <p class="summary-value" id="total-income">R$ 0,00</p>
+                        <p class="summary-subtitle" id="income-subtitle">R$ 0,00 recebido</p>
+                    </div>
+                    <span class="summary-icon bg-green-100 text-green-600">
+                        <i class="fa-solid fa-arrow-trend-up"></i>
+                    </span>
+                </article>
+
+                <article class="summary-card border-red-500">
+                    <div>
+                        <p class="summary-label">Saídas</p>
+                        <p class="summary-value" id="total-expense">R$ 0,00</p>
+                        <p class="summary-subtitle" id="expense-subtitle">R$ 0,00 pago</p>
+                    </div>
+                    <span class="summary-icon bg-red-100 text-red-600">
+                        <i class="fa-solid fa-arrow-trend-down"></i>
+                    </span>
+                </article>
+
+                <article class="summary-card summary-card-featured border-brand-500">
+                    <div>
+                        <p class="summary-label">Resultado</p>
+                        <p class="summary-value" id="total-balance">R$ 0,00</p>
+                        <p class="summary-subtitle" id="balance-subtitle">Lucro ou prejuízo do mês</p>
+                    </div>
+                    <span class="summary-icon bg-brand-50 text-brand-600">
+                        <i class="fa-solid fa-scale-balanced"></i>
+                    </span>
+                </article>
+
+                <article class="summary-card border-blue-500">
+                    <div>
+                        <p class="summary-label">Caixa Realizado</p>
+                        <p class="summary-value" id="cash-balance">R$ 0,00</p>
+                        <p class="summary-subtitle" id="cash-subtitle">Entrou menos saiu</p>
+                    </div>
+                    <span class="summary-icon bg-blue-100 text-blue-600">
+                        <i class="fa-solid fa-vault"></i>
+                    </span>
+                </article>
+
+                <article class="summary-card border-yellow-400">
+                    <div>
+                        <p class="summary-label">Saúde</p>
+                        <p class="summary-value" id="health-score">0</p>
+                        <p class="summary-subtitle" id="health-subtitle">Sem dados suficientes</p>
+                    </div>
+                    <span class="summary-icon bg-yellow-100 text-yellow-700">
+                        <i class="fa-solid fa-heart-pulse"></i>
+                    </span>
+                </article>
+            </section>
+
+            <section id="income-alert" class="alert-strip hidden mb-6">
+                <i class="fa-solid fa-triangle-exclamation"></i>
+                <div>
+                    <strong id="income-alert-title">Atenção</strong>
+                    <p id="income-alert-text">Você atingiu 80% da sua renda mensal.</p>
+                </div>
+            </section>
+
+            <section class="surface-card p-6 mb-6">
+                <div class="flex flex-col gap-5 xl:flex-row xl:items-start xl:justify-between">
+                    <div class="max-w-3xl">
+                        <div class="flex flex-wrap items-center gap-3 mb-3">
+                            <h2 class="section-title">Diagnóstico do mês</h2>
+                            <span id="health-badge" class="status-badge neutral">Sem dados</span>
+                        </div>
+                        <p id="diagnostic-main" class="text-slate-600 leading-relaxed">
+                            Cadastre receitas e despesas para enxergar o resultado do mês.
+                        </p>
+                        <ul id="diagnostic-list" class="diagnostic-list mt-4"></ul>
+                    </div>
+
+                    <div class="diagnostic-grid">
+                        <div class="metric-tile">
+                            <span>Renda comprometida</span>
+                            <strong id="commitment-rate">0%</strong>
+                        </div>
+                        <div class="metric-tile">
+                            <span>Potencial de corte</span>
+                            <strong id="cut-potential">R$ 0,00</strong>
+                        </div>
+                        <div class="metric-tile">
+                            <span>Reserva sugerida</span>
+                            <strong id="reserve-suggestion">R$ 0,00</strong>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section class="grid grid-cols-1 xl:grid-cols-4 gap-6 mb-8">
+                <article class="surface-card p-6">
+                    <div class="card-heading border-yellow-400">
+                        <i class="fa-solid fa-gauge-high text-yellow-500"></i>
+                        <h2>Uso da renda</h2>
+                    </div>
+                    <div id="income-usage-chart" class="chart-stack mt-5"></div>
+                </article>
+
+                <article class="surface-card p-6">
+                    <div class="card-heading border-purple-500">
+                        <i class="fa-solid fa-chart-simple text-purple-500"></i>
+                        <h2>Gastos por categoria</h2>
+                    </div>
+                    <div id="category-chart" class="category-chart mt-5"></div>
+                </article>
+
+                <article class="surface-card p-6">
+                    <div class="card-heading border-green-500">
+                        <i class="fa-solid fa-seedling text-green-500"></i>
+                        <h2>Reserva</h2>
+                    </div>
+                    <div id="reserve-chart" class="chart-stack mt-5"></div>
+                </article>
+
+                <article class="surface-card p-6">
+                    <div class="card-heading border-blue-500">
+                        <i class="fa-solid fa-calendar-days text-blue-500"></i>
+                        <h2>Próximos meses</h2>
+                    </div>
+                    <div id="forecast-list" class="forecast-list mt-5"></div>
+                </article>
+            </section>
+
+            <section class="grid grid-cols-1 xl:grid-cols-3 gap-6 mb-8">
+                <article class="surface-card p-6">
+                    <div class="card-heading border-yellow-400">
+                        <i class="fa-solid fa-scissors text-yellow-500"></i>
+                        <h2>O que posso cortar?</h2>
+                    </div>
+
+                    <div class="space-y-5 mt-5">
+                        <div>
+                            <div class="flex justify-between gap-4 text-sm mb-2">
+                                <span class="font-medium text-slate-700">Essenciais</span>
+                                <span id="essential-total" class="font-bold text-slate-900">R$ 0,00</span>
+                            </div>
+                            <div class="bar-track">
+                                <div class="bar-fill bg-brand-500" id="essential-bar"></div>
+                            </div>
+                        </div>
+
+                        <div>
+                            <div class="flex justify-between gap-4 text-sm mb-2">
+                                <span class="font-medium text-slate-700">Desejos</span>
+                                <span id="desire-total" class="font-bold text-red-600">R$ 0,00</span>
+                            </div>
+                            <div class="bar-track">
+                                <div class="bar-fill bg-yellow-400" id="desire-bar"></div>
+                            </div>
+                        </div>
+
+                        <ul id="cut-list" class="analysis-list"></ul>
+                    </div>
+                </article>
+
+                <article class="surface-card p-6 xl:col-span-2">
+                    <div class="card-heading border-blue-500">
+                        <i class="fa-solid fa-credit-card text-blue-500"></i>
+                        <h2>Faturas e cartões</h2>
+                    </div>
+                    <div id="card-overview" class="card-overview mt-5"></div>
+                </article>
+            </section>
+
+            <section class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <aside class="lg:col-span-1">
+                    <div class="surface-card p-6 sticky-panel" id="transaction-form-card">
+                        <div class="flex items-center justify-between gap-3 border-b border-slate-200 pb-3 mb-5">
+                            <h2 class="section-title" id="form-title">Nova Transação</h2>
+                            <span class="text-brand-600 text-xl">
+                                <i class="fa-solid fa-plus"></i>
+                            </span>
+                        </div>
+
+                        <form id="transaction-form" class="space-y-4">
+                            <input type="hidden" id="transaction-id">
+
+                            <div>
+                                <label class="form-label" for="desc">Descrição</label>
+                                <input type="text" id="desc" required placeholder="Ex: Salário, Conta de Luz" class="form-control">
+                                <p id="auto-category-hint" class="field-hint"></p>
+                            </div>
+
+                            <div>
+                                <label id="amount-label" class="form-label" for="amount">Valor (R$)</label>
+                                <input type="text" id="amount" required inputmode="decimal" placeholder="Ex: 120,50" class="form-control">
+                                <p id="amount-hint" class="field-hint"></p>
+                            </div>
+
+                            <div>
+                                <label class="form-label" for="type">Tipo</label>
+                                <select id="type" class="form-control bg-white">
+                                    <option value="income">Receita (Entrada)</option>
+                                    <option value="expense">Despesa (Saída)</option>
+                                    <option value="installment">Compra Parcelada (Saída)</option>
+                                </select>
+                            </div>
+
+                            <div id="expense-fields" class="hidden form-group">
+                                <div>
+                                    <label class="form-label" for="category">Categoria</label>
+                                    <select id="category" class="form-control bg-white">
+                                        <option value="moradia">Moradia</option>
+                                        <option value="mercado">Mercado</option>
+                                        <option value="alimentacao">Delivery e restaurantes</option>
+                                        <option value="transporte">Transporte</option>
+                                        <option value="saude">Saúde</option>
+                                        <option value="educacao">Educação</option>
+                                        <option value="assinaturas">Assinaturas</option>
+                                        <option value="cartao">Cartão de crédito</option>
+                                        <option value="dividas">Dívidas e empréstimos</option>
+                                        <option value="lazer">Lazer</option>
+                                        <option value="trabalho">Trabalho</option>
+                                        <option value="outros">Outros</option>
+                                    </select>
+                                </div>
+
+                                <div>
+                                    <label class="form-label" for="necessity">Nível de necessidade</label>
+                                    <select id="necessity" class="form-control bg-white">
+                                        <option value="essential">Essencial</option>
+                                        <option value="desire">Desejo / cortável</option>
+                                    </select>
+                                </div>
+
+                                <div id="card-field">
+                                    <label class="form-label" for="card-select">Cartão</label>
+                                    <select id="card-select" class="form-control bg-white">
+                                        <option value="">Sem cartão</option>
+                                    </select>
+                                </div>
+
+                                <div id="card-payment-field" class="hidden">
+                                    <label class="form-label" for="card-payment-mode">Como essa compra sera paga?</label>
+                                    <select id="card-payment-mode" class="form-control bg-white">
+                                        <option value="single">Normal / a vista</option>
+                                        <option value="installment">Parcelado no cartao</option>
+                                        <option value="booklet">Carne</option>
+                                    </select>
+                                    <p class="field-hint">Use parcelado no cartao ou carne para dividir a compra e confirmar o pagamento manualmente depois.</p>
+                                </div>
+                            </div>
+
+                            <div id="installment-fields" class="hidden form-group">
+                                <div>
+                                    <label class="form-label" for="installments">Número de parcelas</label>
+                                    <input type="number" id="installments" min="2" step="1" placeholder="Ex: 12" class="form-control">
+                                </div>
+                            </div>
+
+                            <div id="repeat-field" class="form-group">
+                                <label class="inline-flex items-center gap-3 text-sm font-medium text-slate-700">
+                                    <input type="checkbox" id="recurring" class="accent-brand-600 h-4 w-4">
+                                    Repetir mensalmente
+                                </label>
+                                <div id="recurrence-options" class="hidden pt-3">
+                                    <label class="form-label" for="recurrence-months">Quantidade de meses</label>
+                                    <select id="recurrence-months" class="form-control bg-white">
+                                        <option value="3">3 meses</option>
+                                        <option value="6">6 meses</option>
+                                        <option value="12" selected>12 meses</option>
+                                        <option value="24">24 meses</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div>
+                                <label id="date-label" class="form-label" for="date">Data</label>
+                                <input type="date" id="date" required class="form-control">
+                            </div>
+
+                            <div>
+                                <label class="form-label" for="paid">Status</label>
+                                <select id="paid" class="form-control bg-white">
+                                    <option value="auto">Automático pela data</option>
+                                    <option value="paid">Pago / recebido</option>
+                                    <option value="pending">Pendente</option>
+                                </select>
+                            </div>
+
+                            <div id="reserve-link-field" class="hidden">
+                                <label class="form-label" for="reserve-link-select">Adicionar em uma reserva?</label>
+                                <select id="reserve-link-select" class="form-control bg-white"></select>
+                                <p class="field-hint">Use quando esse lançamento for dinheiro guardado em uma reserva.</p>
+                            </div>
+
+                            <div class="flex flex-col gap-2 sm:flex-row">
+                                <button id="submit-button" type="submit" class="primary-button">
+                                    <i class="fa-solid fa-plus"></i>
+                                    <span>Adicionar</span>
+                                </button>
+                                <button id="cancel-edit" type="button" class="secondary-button hidden">
+                                    Cancelar
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </aside>
+
+                <section class="lg:col-span-2">
+                    <div class="surface-card p-6 min-h-full">
+                        <div class="flex flex-col gap-4 border-b border-slate-200 pb-4 mb-5 xl:flex-row xl:items-start xl:justify-between">
+                            <div>
+                                <h2 class="section-title">Histórico</h2>
+                                <p id="transaction-count" class="text-sm text-slate-500 mt-1">0 registros</p>
+                            </div>
+
+                            <div class="history-filters">
+                                <label class="sr-only" for="search-filter">Buscar</label>
+                                <input type="search" id="search-filter" placeholder="Buscar" class="filter-control">
+
+                                <label class="sr-only" for="type-filter">Tipo</label>
+                                <select id="type-filter" class="filter-control bg-white">
+                                    <option value="all">Todos</option>
+                                    <option value="income">Entradas</option>
+                                    <option value="expense">Saídas</option>
+                                </select>
+
+                                <label class="sr-only" for="status-filter">Status</label>
+                                <select id="status-filter" class="filter-control bg-white">
+                                    <option value="all">Tudo</option>
+                                    <option value="paid">Pagos</option>
+                                    <option value="pending">Pendentes</option>
+                                </select>
+
+                                <label class="sr-only" for="category-filter">Categoria</label>
+                                <select id="category-filter" class="filter-control bg-white">
+                                    <option value="all">Categorias</option>
+                                    <option value="moradia">Moradia</option>
+                                    <option value="mercado">Mercado</option>
+                                    <option value="alimentacao">Delivery e restaurantes</option>
+                                    <option value="transporte">Transporte</option>
+                                    <option value="saude">Saúde</option>
+                                    <option value="educacao">Educação</option>
+                                    <option value="assinaturas">Assinaturas</option>
+                                    <option value="cartao">Cartão de crédito</option>
+                                    <option value="dividas">Dívidas e empréstimos</option>
+                                    <option value="lazer">Lazer</option>
+                                    <option value="trabalho">Trabalho</option>
+                                    <option value="outros">Outros</option>
+                                </select>
+
+                                <label class="sr-only" for="necessity-filter">Necessidade</label>
+                                <select id="necessity-filter" class="filter-control bg-white">
+                                    <option value="all">Essencial/cortável</option>
+                                    <option value="essential">Essencial</option>
+                                    <option value="desire">Cortável</option>
+                                </select>
+
+                                <label class="sr-only" for="card-filter">Cartão</label>
+                                <select id="card-filter" class="filter-control bg-white">
+                                    <option value="all">Cartões</option>
+                                    <option value="none">Sem cartão</option>
+                                </select>
+
+                                <label class="sr-only" for="tag-filter">Tipo avançado</label>
+                                <select id="tag-filter" class="filter-control bg-white">
+                                    <option value="all">Origem</option>
+                                    <option value="installment">Parcelado</option>
+                                    <option value="recurring">Recorrente</option>
+                                    <option value="planned">Conta prevista</option>
+                                    <option value="card">No cartão</option>
+                                </select>
+
+                                <label class="sr-only" for="min-filter">Valor mínimo</label>
+                                <input type="text" id="min-filter" inputmode="decimal" placeholder="Mín." class="filter-control">
+
+                                <label class="sr-only" for="max-filter">Valor máximo</label>
+                                <input type="text" id="max-filter" inputmode="decimal" placeholder="Máx." class="filter-control">
+
+                                <label class="sr-only" for="date-start-filter">Data inicial</label>
+                                <input type="date" id="date-start-filter" class="filter-control">
+
+                                <label class="sr-only" for="date-end-filter">Data final</label>
+                                <input type="date" id="date-end-filter" class="filter-control">
+
+                                <button id="reset-filters" type="button" class="filter-reset-button">
+                                    <i class="fa-solid fa-rotate-left"></i>
+                                    <span>Limpar filtros</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div id="empty-state" class="empty-state hidden">
+                            <i class="fa-solid fa-receipt"></i>
+                            <p>Nenhuma transação neste período.</p>
+                        </div>
+
+                        <ul id="transaction-list" class="space-y-3"></ul>
+                    </div>
+                </section>
+            </section>
+        </section>
+
+        <section class="tab-panel" data-panel="profile">
+            <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
+                <section class="surface-card p-6 xl:col-span-1">
+                    <div class="card-heading border-brand-500">
+                        <i class="fa-solid fa-user-gear text-brand-600"></i>
+                        <h2>Perfil financeiro</h2>
+                    </div>
+                    <p class="profile-form-intro mt-5">Defina regras reais da sua rotina para o painel calcular limites, metas e alertas com mais precisao.</p>
+                    <form id="profile-form" class="space-y-5 mt-5">
+                        <div class="profile-form-grid">
+                            <div>
+                                <label class="form-label" for="profile-name">Nome</label>
+                                <input type="text" id="profile-name" class="form-control" placeholder="Seu nome">
+                            </div>
+                            <div>
+                                <label class="form-label" for="profile-income">Renda mensal esperada</label>
+                                <input type="text" id="profile-income" inputmode="decimal" class="form-control" placeholder="Ex: 6.500,00">
+                            </div>
+                            <div>
+                                <label class="form-label" for="profile-payday">Dia em que recebe</label>
+                                <input type="number" id="profile-payday" min="1" max="31" step="1" class="form-control" placeholder="Ex: 5">
+                            </div>
+                            <div class="sm:col-span-2">
+                                <label class="form-label" for="profile-objective">Objetivo principal</label>
+                                <select id="profile-objective" class="form-control bg-white">
+                                    <option value="organizar">Organizar contas</option>
+                                    <option value="economizar">Economizar mais</option>
+                                    <option value="quitar">Quitar dividas</option>
+                                    <option value="reserva">Juntar reserva</option>
+                                    <option value="investir">Investir todo mes</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="form-label" for="profile-review-moment">Momento ideal para revisar o mes</label>
+                                <select id="profile-review-moment" class="form-control bg-white">
+                                    <option value="start">Inicio do mes</option>
+                                    <option value="middle">Meio do mes</option>
+                                    <option value="end">Fim do mes</option>
+                                </select>
+                            </div>
+                            <div class="sm:col-span-2">
+                                <label class="form-label" for="profile-main-reserve">Reserva principal</label>
+                                <select id="profile-main-reserve" class="form-control bg-white">
+                                    <option value="">Nenhuma reserva</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="profile-form-section">
+                            <div class="profile-section-head compact">
+                                <h3>Metas e limites</h3>
+                                <p>Esses campos orientam o comportamento ideal do seu painel.</p>
+                            </div>
+                            <div class="profile-form-grid mt-4">
+                                <div>
+                                    <label class="form-label" for="profile-savings-goal">Meta mensal principal</label>
+                                    <input type="text" id="profile-savings-goal" inputmode="decimal" class="form-control" placeholder="Quanto quer guardar ou amortizar">
+                                </div>
+                                <div>
+                                    <label class="form-label" for="profile-max-commitment">Limite de renda comprometida (%)</label>
+                                    <input type="number" id="profile-max-commitment" min="50" max="100" step="1" class="form-control" placeholder="80">
+                                </div>
+                                <div>
+                                    <label class="form-label" for="profile-reserve-level">Nivel desejado da reserva</label>
+                                    <select id="profile-reserve-level" class="form-control bg-white">
+                                        <option value="basic">Basica - 1 mes</option>
+                                        <option value="safe">Segura - 3 meses</option>
+                                        <option value="strong">Forte - 6 meses</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        <button type="submit" class="primary-button">
+                            <i class="fa-solid fa-check"></i>
+                            <span>Salvar perfil</span>
+                        </button>
+                    </form>
+                </section>
+
+                <section class="surface-card p-6 xl:col-span-2">
+                    <div id="profile-hero" class="profile-hero"></div>
+                    <div id="profile-summary" class="insight-grid mt-5"></div>
+
+                    <div class="profile-detail-grid mt-6">
+                        <section class="profile-section-card">
+                            <div class="profile-section-head">
+                                <h3>Faixas recomendadas do mes</h3>
+                                <p>Quanto cada bloco deveria consumir com base na sua renda e objetivo.</p>
+                            </div>
+                            <div id="profile-budget-plan" class="profile-plan-grid"></div>
+                        </section>
+
+                        <section class="profile-section-card">
+                            <div class="profile-section-head">
+                                <h3>Ciclo e metas</h3>
+                                <p>Leituras de calendario, reserva e folga real para sustentar o plano.</p>
+                            </div>
+                            <div id="profile-cycle" class="profile-cycle-grid"></div>
+                        </section>
+                    </div>
+
+                    <section class="profile-section-card mt-6">
+                        <div class="profile-section-head">
+                            <h3>Acoes prioritarias</h3>
+                            <p>Orientacoes automaticas com base no mes selecionado e no seu perfil.</p>
+                        </div>
+                        <div id="profile-action-plan" class="profile-action-list"></div>
+                    </section>
+                </section>
+            </div>
+        </section>
+
+        <section class="tab-panel" data-panel="reserve">
+            <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
+                <section class="surface-card p-6">
+                    <div class="card-heading border-green-500">
+                        <i class="fa-solid fa-piggy-bank text-green-500"></i>
+                        <h2>Reserva financeira</h2>
+                    </div>
+                    <form id="reserve-form" class="space-y-4 mt-5">
+                        <input type="hidden" id="reserve-id">
+                        <div>
+                            <label class="form-label" for="reserve-name">Nome da reserva</label>
+                            <input type="text" id="reserve-name" required class="form-control" placeholder="Emergência">
+                        </div>
+                        <div>
+                            <label class="form-label" for="reserve-target">Valor alvo</label>
+                            <input type="text" id="reserve-target" required inputmode="decimal" class="form-control" placeholder="Ex: 5.000,00">
+                        </div>
+                        <div>
+                            <label class="form-label" for="reserve-saved">Valor guardado</label>
+                            <input type="text" id="reserve-saved" inputmode="decimal" class="form-control" placeholder="Ex: 500,00">
+                        </div>
+                        <div>
+                            <label class="form-label" for="reserve-monthly">Aporte mensal desejado</label>
+                            <input type="text" id="reserve-monthly" inputmode="decimal" class="form-control" placeholder="Ex: 200,00">
+                        </div>
+                        <div class="flex flex-col gap-2 sm:flex-row">
+                            <button id="reserve-submit" type="submit" class="primary-button">
+                                <i class="fa-solid fa-plus"></i>
+                                <span>Salvar reserva</span>
+                            </button>
+                            <button id="reserve-cancel" type="button" class="secondary-button hidden">Cancelar</button>
+                        </div>
+                    </form>
+
+                    <form id="reserve-deposit-form" class="form-group space-y-4 mt-5">
+                        <div>
+                            <label class="form-label" for="reserve-deposit-select">Adicionar dinheiro</label>
+                            <select id="reserve-deposit-select" class="form-control bg-white"></select>
+                        </div>
+                        <div>
+                            <label class="form-label" for="reserve-deposit-amount">Valor</label>
+                            <input type="text" id="reserve-deposit-amount" inputmode="decimal" class="form-control" placeholder="Ex: 100,00">
+                        </div>
+                        <button type="submit" class="secondary-button w-full">
+                            <i class="fa-solid fa-arrow-up-from-bracket"></i>
+                            <span>Guardar</span>
+                        </button>
+                    </form>
+                </section>
+
+                <section class="surface-card p-6 xl:col-span-2">
+                    <div class="card-heading border-green-500">
+                        <i class="fa-solid fa-list-check text-green-500"></i>
+                        <h2>Minhas reservas</h2>
+                    </div>
+                    <div id="reserve-list" class="entity-list mt-5"></div>
+                </section>
+            </div>
+        </section>
+
+        <section class="tab-panel" data-panel="planned">
+            <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
+                <section class="surface-card p-6">
+                    <div class="card-heading border-yellow-400">
+                        <i class="fa-solid fa-calendar-check text-yellow-500"></i>
+                        <h2>Contas previstas</h2>
+                    </div>
+                    <form id="planned-form" class="space-y-4 mt-5">
+                        <input type="hidden" id="planned-id">
+                        <div>
+                            <label class="form-label" for="planned-name">Descrição</label>
+                            <input type="text" id="planned-name" required class="form-control" placeholder="Luz, água, internet">
+                        </div>
+                        <div>
+                            <label class="form-label" for="planned-amount">Valor previsto</label>
+                            <input type="text" id="planned-amount" required inputmode="decimal" class="form-control" placeholder="Ex: 120,50">
+                        </div>
+                        <div>
+                            <label class="form-label" for="planned-due-date">Vencimento</label>
+                            <input type="date" id="planned-due-date" required class="form-control">
+                        </div>
+                        <div>
+                            <label class="form-label" for="planned-category">Categoria</label>
+                            <select id="planned-category" class="form-control bg-white">
+                                <option value="moradia">Moradia</option>
+                                <option value="mercado">Mercado</option>
+                                <option value="alimentacao">Delivery e restaurantes</option>
+                                <option value="transporte">Transporte</option>
+                                <option value="saude">Saúde</option>
+                                <option value="educacao">Educação</option>
+                                <option value="assinaturas">Assinaturas</option>
+                                <option value="cartao">Cartão de crédito</option>
+                                <option value="dividas">Dívidas e empréstimos</option>
+                                <option value="lazer">Lazer</option>
+                                <option value="trabalho">Trabalho</option>
+                                <option value="outros">Outros</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="form-label" for="planned-necessity">Nível de necessidade</label>
+                            <select id="planned-necessity" class="form-control bg-white">
+                                <option value="essential">Essencial</option>
+                                <option value="desire">Desejo / cortável</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="form-label" for="planned-card-select">Cartão</label>
+                            <select id="planned-card-select" class="form-control bg-white">
+                                <option value="">Sem cartão</option>
+                            </select>
+                        </div>
+                        <label class="inline-flex items-center gap-3 text-sm font-medium text-slate-700">
+                            <input type="checkbox" id="planned-active" class="accent-brand-600 h-4 w-4" checked>
+                            Ativa
+                        </label>
+                        <label class="inline-flex items-center gap-3 text-sm font-medium text-slate-700">
+                            <input type="checkbox" id="planned-repeat" class="accent-brand-600 h-4 w-4">
+                            Repetir todo mês
+                        </label>
+                        <div class="flex flex-col gap-2 sm:flex-row">
+                            <button id="planned-submit" type="submit" class="primary-button">
+                                <i class="fa-solid fa-plus"></i>
+                                <span>Salvar conta</span>
+                            </button>
+                            <button id="planned-cancel" type="button" class="secondary-button hidden">Cancelar</button>
+                        </div>
+                    </form>
+                </section>
+
+                <section class="surface-card p-6 xl:col-span-2">
+                    <div class="card-heading border-yellow-400">
+                        <i class="fa-solid fa-clipboard-list text-yellow-500"></i>
+                        <h2>Agenda de contas</h2>
+                    </div>
+                    <div class="flex flex-col gap-2 mt-5 sm:flex-row sm:justify-end">
+                        <button id="pay-month-bills" type="button" class="secondary-button">
+                            <i class="fa-solid fa-circle-check"></i>
+                            <span>Marcar mês pago</span>
+                        </button>
+                        <button id="sync-planned" type="button" class="secondary-button">
+                            <i class="fa-solid fa-rotate"></i>
+                            <span>Atualizar mês</span>
+                        </button>
+                    </div>
+                    <div id="planned-list" class="entity-list mt-5"></div>
+                </section>
+            </div>
+        </section>
+
+        <section class="tab-panel" data-panel="cards">
+            <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
+                <section class="surface-card p-6">
+                    <div class="card-heading border-blue-500">
+                        <i class="fa-solid fa-credit-card text-blue-500"></i>
+                        <h2>Cartão de crédito</h2>
+                    </div>
+                    <form id="card-form" class="space-y-4 mt-5">
+                        <input type="hidden" id="card-id">
+                        <div>
+                            <label class="form-label" for="card-name">Nome do cartão</label>
+                            <input type="text" id="card-name" required class="form-control" placeholder="Nubank, Inter, Itaú">
+                        </div>
+                        <div>
+                            <label class="form-label" for="card-limit">Limite total</label>
+                            <input type="text" id="card-limit" required inputmode="decimal" class="form-control" placeholder="Ex: 3.000,00">
+                        </div>
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <label class="form-label" for="card-closing">Fechamento</label>
+                                <input type="number" id="card-closing" min="1" max="31" step="1" class="form-control">
+                            </div>
+                            <div>
+                                <label class="form-label" for="card-due">Vencimento</label>
+                                <input type="number" id="card-due" min="1" max="31" step="1" class="form-control">
+                            </div>
+                        </div>
+                        <div>
+                            <label class="form-label" for="card-color">Cor</label>
+                            <select id="card-color" class="form-control bg-white">
+                                <option value="#2563eb">Azul</option>
+                                <option value="#0d9488">Verde</option>
+                                <option value="#7c3aed">Roxo</option>
+                                <option value="#dc2626">Vermelho</option>
+                                <option value="#475569">Cinza</option>
+                            </select>
+                        </div>
+                        <div class="flex flex-col gap-2 sm:flex-row">
+                            <button id="card-submit" type="submit" class="primary-button">
+                                <i class="fa-solid fa-plus"></i>
+                                <span>Salvar cartão</span>
+                            </button>
+                            <button id="card-cancel" type="button" class="secondary-button hidden">Cancelar</button>
+                        </div>
+                    </form>
+                </section>
+
+                <section class="surface-card p-6 xl:col-span-2">
+                    <div class="card-heading border-blue-500">
+                        <i class="fa-solid fa-table-list text-blue-500"></i>
+                        <h2>Meus cartões</h2>
+                    </div>
+                    <div id="card-list" class="entity-list mt-5"></div>
+                </section>
+            </div>
+        </section>
+
+        <section class="tab-panel" data-panel="investments">
+            <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
+                <section class="surface-card p-6">
+                    <div class="card-heading border-emerald-500">
+                        <i class="fa-solid fa-coins text-emerald-500"></i>
+                        <h2>Central de investimentos</h2>
+                    </div>
+                    <p id="investment-form-caption" class="text-sm text-slate-500 mt-4">
+                        Escolha ativos prontos de mercado com cotação automática ou cadastre investimentos próprios com projeção mensal. É uma simulação para organização, não uma previsão garantida.
+                    </p>
+                    <form id="investment-form" class="space-y-4 mt-5">
+                        <input type="hidden" id="investment-id">
+                        <input type="hidden" id="investment-code">
+
+                        <div class="investment-mode-toggle" role="tablist" aria-label="Forma de cadastro do investimento">
+                            <button id="investment-entry-market" type="button" class="investment-mode-button active" aria-pressed="true">
+                                <i class="fa-solid fa-satellite-dish"></i>
+                                <span>Mercado ao vivo</span>
+                            </button>
+                            <button id="investment-entry-manual" type="button" class="investment-mode-button" aria-pressed="false">
+                                <i class="fa-solid fa-building-columns"></i>
+                                <span>Outros investimentos</span>
+                            </button>
+                        </div>
+
+                        <div>
+                            <label id="investment-type-label" class="form-label" for="investment-type">Categoria monitorada</label>
+                            <select id="investment-type" class="form-control bg-white">
+                                <option value="currency">Moeda estrangeira</option>
+                                <option value="crypto">Criptomoeda</option>
+                            </select>
+                        </div>
+
+                        <div id="investment-market-fields" class="space-y-4">
+                            <div>
+                                <label class="form-label" for="investment-asset-preset">Ativo acompanhado</label>
+                                <select id="investment-asset-preset" class="form-control bg-white"></select>
+                            </div>
+                            <div id="investment-market-preview" class="investment-preview-card"></div>
+                            <div id="investment-quantity-row">
+                                <label class="form-label" for="investment-quantity">Quantidade</label>
+                                <input type="text" id="investment-quantity" inputmode="decimal" class="form-control" placeholder="Ex: 250 ou 0,015">
+                            </div>
+                        </div>
+
+                        <div id="investment-manual-fields" class="hidden space-y-4">
+                            <div>
+                                <label class="form-label" for="investment-name">Nome do investimento</label>
+                                <input type="text" id="investment-name" class="form-control" placeholder="Poupança Nubank, CDB 110% CDI, Tesouro Selic">
+                            </div>
+                            <div id="investment-rate-row">
+                                <label class="form-label" for="investment-rate">Estimativa de rendimento ao mês (%)</label>
+                                <input type="text" id="investment-rate" inputmode="decimal" class="form-control" placeholder="Ex: 0,85">
+                                <p class="field-hint">Se não souber, use 0,50 para algo conservador ou 0,85 para uma simulação um pouco maior.</p>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="form-label" for="investment-amount">Quanto você aplicou inicialmente (R$)</label>
+                            <input type="text" id="investment-amount" required inputmode="decimal" class="form-control" placeholder="Ex: 1.000,00">
+                        </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <div>
+                                <label class="form-label" for="investment-monthly">Aporte mensal (R$)</label>
+                                <input type="text" id="investment-monthly" inputmode="decimal" class="form-control" placeholder="Ex: 100,00">
+                            </div>
+                            <div class="investment-inline-note">
+                                <strong>Simulação simples</strong>
+                                <span>Moedas e criptos usam cotação automática. Outros investimentos usam uma estimativa mensal informada por você.</span>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="form-label" for="investment-start-date">Data do primeiro aporte</label>
+                            <input type="date" id="investment-start-date" required class="form-control">
+                        </div>
+                        <div>
+                            <label class="form-label" for="investment-notes">Observações</label>
+                            <textarea id="investment-notes" rows="3" class="form-control" placeholder="Corretora, banco, estratégia ou qualquer anotação útil"></textarea>
+                        </div>
+                        <div class="flex flex-col gap-2 sm:flex-row">
+                            <button id="investment-submit" type="submit" class="primary-button">
+                                <i class="fa-solid fa-plus"></i>
+                                <span>Salvar investimento</span>
+                            </button>
+                            <button id="investment-cancel" type="button" class="secondary-button hidden">Cancelar</button>
+                        </div>
+                    </form>
+                </section>
+
+                <section class="xl:col-span-2 space-y-6">
+                    <section class="surface-card p-6">
+                        <div class="card-heading border-emerald-500">
+                            <i class="fa-solid fa-chart-line text-emerald-500"></i>
+                            <h2>Radar da carteira</h2>
+                        </div>
+                        <div id="investment-summary" class="insight-grid mt-5"></div>
+                        <div id="investment-portfolio-chart" class="investment-chart-panel mt-6"></div>
+                    </section>
+
+                    <section class="surface-card p-6">
+                        <div class="card-heading border-emerald-500">
+                            <i class="fa-solid fa-layer-group text-emerald-500"></i>
+                            <h2>Ativos acompanhados</h2>
+                        </div>
+                        <div id="investment-list" class="entity-list mt-5"></div>
+                    </section>
+                </section>
+            </div>
+        </section>
+
+        <section class="tab-panel" data-panel="planning">
+            <section class="surface-card p-6 mb-6">
+                <div class="card-heading border-purple-500">
+                    <i class="fa-solid fa-route text-purple-500"></i>
+                    <h2>Planejamento futuro</h2>
+                </div>
+                <div id="planning-summary" class="insight-grid mt-5"></div>
+            </section>
+
+            <section class="surface-card p-6">
+                <div class="card-heading border-purple-500">
+                    <i class="fa-solid fa-chart-line text-purple-500"></i>
+                    <h2>Previsão dos próximos meses</h2>
+                </div>
+                <div id="planning-list" class="planning-grid mt-5"></div>
+            </section>
+        </section>
+
+        <section class="tab-panel" data-panel="simulator">
+            <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
+                <section class="surface-card p-6">
+                    <div class="card-heading border-brand-500">
+                        <i class="fa-solid fa-sliders text-brand-600"></i>
+                        <h2>Simulador</h2>
+                    </div>
+                    <form id="simulator-form" class="space-y-4 mt-5">
+                        <div>
+                            <label class="form-label" for="scenario-type">Cenário</label>
+                            <select id="scenario-type" class="form-control bg-white">
+                                <option value="cut">Cortar gasto mensal</option>
+                                <option value="installment">Comprar parcelado</option>
+                                <option value="income">Adicionar renda</option>
+                                <option value="save">Guardar na reserva</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="form-label" for="scenario-amount">Valor</label>
+                            <input type="text" id="scenario-amount" inputmode="decimal" class="form-control" placeholder="Ex: 500,00">
+                        </div>
+                        <div id="scenario-installments-field">
+                            <label class="form-label" for="scenario-installments">Parcelas</label>
+                            <input type="number" id="scenario-installments" min="2" step="1" class="form-control" value="10">
+                        </div>
+                        <button type="submit" class="primary-button">
+                            <i class="fa-solid fa-calculator"></i>
+                            <span>Simular</span>
+                        </button>
+                    </form>
+                </section>
+
+                <section class="surface-card p-6 xl:col-span-2">
+                    <div class="card-heading border-brand-500">
+                        <i class="fa-solid fa-lightbulb text-brand-600"></i>
+                        <h2>Resultado da simulação</h2>
+                    </div>
+                    <div id="scenario-result" class="scenario-result mt-5"></div>
+                </section>
+            </div>
+        </section>
+    </main>
+
+    <button id="mobile-add-button" class="mobile-add-button" type="button" aria-label="Adicionar transação">
+        <i class="fa-solid fa-plus"></i>
+    </button>
+
+    <div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
+    <div class="nexpoint-watermark" aria-label="Criado por NexPoint">NexPoint</div>
+
+    <div id="auth-modal" class="auth-modal">
+        <div class="auth-backdrop"></div>
+        <section class="auth-panel" role="dialog" aria-modal="true" aria-labelledby="auth-mode-title">
+            <div class="auth-brand">
+                <span class="app-icon auth-app-icon">
+                    <i class="fa-solid fa-wallet"></i>
+                </span>
+                <div>
+                    <p class="auth-eyebrow">Acesso seguro</p>
+                    <h2 id="auth-mode-title">Entrar no modo de teste</h2>
+                </div>
+            </div>
+
+            <p id="auth-mode-subtitle" class="auth-subtitle">Use login adm e senha adm para continuar os testes sem depender do Firebase Auth agora.</p>
+
+            <div id="auth-loading" class="auth-loading hidden">
+                <i class="fa-solid fa-circle-notch"></i>
+                <span>Verificando sessao...</span>
+            </div>
+
+            <form id="auth-form" class="auth-form">
+                <div>
+                    <label class="form-label" for="auth-email">Login</label>
+                    <input id="auth-email" type="text" class="form-control" placeholder="adm" autocomplete="username" required>
+                </div>
+
+                <div>
+                    <label class="form-label" for="auth-password">Senha</label>
+                    <input id="auth-password" type="password" class="form-control" placeholder="adm" autocomplete="current-password" required>
+                </div>
+
+                <div id="auth-confirm-row" class="hidden">
+                    <label class="form-label" for="auth-confirm-password">Confirmar senha</label>
+                    <input id="auth-confirm-password" type="password" class="form-control" placeholder="Repita a senha" autocomplete="new-password">
+                </div>
+
+                <p id="auth-error" class="auth-error hidden"></p>
+
+                <button id="auth-submit" class="primary-button auth-submit" type="submit">
+                    <i class="fa-solid fa-right-to-bracket"></i>
+                    <span>Entrar com adm</span>
+                </button>
+            </form>
+
+            <button id="auth-toggle-mode" class="auth-toggle-button hidden" type="button">Criar conta nova</button>
+        </section>
+    </div>
+
+    <script src="assets/js/app.js?v=20260429-pwa-fix2"></script>
+</body>
+</html>

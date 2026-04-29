@@ -1,0 +1,41 @@
+{
+  "name": "Meu Financeiro NexPoint",
+  "short_name": "Financeiro",
+  "description": "Painel financeiro pessoal com sincronizacao em nuvem.",
+  "id": "/app-pc.html",
+  "start_url": "/app-pc.html",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#f1f5f9",
+  "theme_color": "#0f766e",
+  "orientation": "any",
+  "categories": ["finance", "productivity"],
+  "icons": [
+    {
+      "src": "assets/icons/icon-pc-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "assets/icons/icon-pc-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Abrir painel",
+      "short_name": "Painel",
+      "url": "/dinheiro.html?auth=firebase&app=pc&tab=dashboard",
+      "icons": [{ "src": "assets/icons/icon-pc-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Investimentos",
+      "short_name": "Investir",
+      "url": "/dinheiro.html?auth=firebase&app=pc&tab=investments",
+      "icons": [{ "src": "assets/icons/icon-pc-192.png", "sizes": "192x192" }]
+    }
+  ]
+}
