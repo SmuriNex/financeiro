@@ -1,11 +1,11 @@
-const CACHE_NAME = 'nexpoint-financeiro-v20260429-fix2';
+const CACHE_NAME = 'financeiro-v1.2.0';
 const APP_SHELL = [
   './',
   './dinheiro.html',
   './app-pc.html',
   './app-iphone.html',
-  './assets/css/styles.css?v=20260429-pwa-fix2',
-  './assets/js/app.js?v=20260429-pwa-fix2',
+  './assets/css/styles.css?v=1.2.0',
+  './assets/js/app.js?v=1.2.0',
   './manifest-pc.webmanifest',
   './manifest-iphone.webmanifest',
   './assets/icons/icon-192.png',

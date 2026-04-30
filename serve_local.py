@@ -8,7 +8,8 @@ from pathlib import Path
 
 
 PORT = int(os.environ.get('PORT', '8010'))
-ROOT = Path(__file__).resolve().parent
+PROJECT_ROOT = Path(__file__).resolve().parent
+ROOT = PROJECT_ROOT / 'public'
 AWESOMEAPI_BASE = 'https://economia.awesomeapi.com.br'
 AWESOMEAPI_TOKEN = os.environ.get('AWESOMEAPI_TOKEN', '').strip()
 

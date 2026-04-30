@@ -1,4 +1,4 @@
-const FIREBASE_CONFIG = {
+﻿const FIREBASE_CONFIG = {
     apiKey: 'AIzaSyDcM0slOOlhAzi03qHwdJcygPKPWfu6GM0',
     authDomain: 'meu-financeiro-ec5be.firebaseapp.com',
     projectId: 'meu-financeiro-ec5be',
@@ -9,6 +9,11 @@ const FIREBASE_CONFIG = {
 };
 
 const AUTH_MODE_STORAGE_KEY = 'finance_panel_auth_mode_v1';
+const APP_VERSION = '1.2.0';
+const SCHEMA_VERSION = 2;
+const RUNNING_FROM_FILE = window.location.protocol === 'file:';
+const LOCAL_DEV_HOSTS = new Set(['localhost', '127.0.0.1', '::1']);
+const LOCAL_AUTH_ALLOWED = RUNNING_FROM_FILE || LOCAL_DEV_HOSTS.has(window.location.hostname);
 const AUTH_ENABLED = resolveAuthEnabled();
 const DEV_ACCESS = {
     uid: 'local-adm',
@@ -17,7 +22,6 @@ const DEV_ACCESS = {
 };
 const LOCAL_APP_URL = 'http://localhost:8010/dinheiro.html';
 const LOCAL_TEST_AUTH_KEY = 'finance_panel_local_test_auth_v1';
-const RUNNING_FROM_FILE = window.location.protocol === 'file:';
 let analyticsInstance = null;
 let firebaseAppModule = null;
 let firebaseAnalyticsModule = null;
@@ -34,8 +38,10 @@ const STORAGE_KEYS = {
     plannedBills: 'finance_panel_planned_bills_v1',
     investments: 'finance_panel_investments_v1',
     cards: 'finance_panel_cards_v1',
+    goals: 'finance_panel_goals_v1',
     prefs: 'finance_panel_preferences_v1',
-    meta: 'finance_panel_sync_meta_v1'
+    meta: 'finance_panel_sync_meta_v1',
+    backups: 'finance_panel_backup_history_v1'
 };
 
 const CATEGORY_LABELS = {
@@ -66,29 +72,29 @@ const OBJECTIVE_STRATEGIES = {
         essentialShare: 0.55,
         flexibleShare: 0.2,
         goalShare: 0.25,
-        goalLabel: 'Folga estratÃ©gica',
-        summary: 'Primeiro estabilize o mÃªs e crie espaÃ§o para sobrar dinheiro.'
+        goalLabel: 'Folga estratégica',
+        summary: 'Primeiro estabilize o mês e crie espaço para sobrar dinheiro.'
     },
     economizar: {
         essentialShare: 0.5,
         flexibleShare: 0.15,
         goalShare: 0.35,
         goalLabel: 'Economia mensal',
-        summary: 'O foco agora Ã© ampliar sobra, reduzir desejos e preservar caixa.'
+        summary: 'O foco agora é ampliar sobra, reduzir desejos e preservar caixa.'
     },
     quitar: {
         essentialShare: 0.55,
         flexibleShare: 0.1,
         goalShare: 0.35,
-        goalLabel: 'AmortizaÃ§Ã£o',
-        summary: 'Seu plano precisa abrir caixa para atacar dÃ­vidas com consistÃªncia.'
+        goalLabel: 'Amortização',
+        summary: 'Seu plano precisa abrir caixa para atacar dívidas com consistência.'
     },
     reserva: {
         essentialShare: 0.5,
         flexibleShare: 0.15,
         goalShare: 0.35,
         goalLabel: 'Reserva mensal',
-        summary: 'A prioridade Ã© construir colchÃ£o financeiro sem sufocar o dia a dia.'
+        summary: 'A prioridade é construir colchão financeiro sem sufocar o dia a dia.'
     },
     investir: {
         essentialShare: 0.5,
@@ -192,6 +198,7 @@ const state = {
     plannedBills: [],
     investments: [],
     cards: [],
+    goals: [],
     selectedMonth: '',
     activeTab: 'dashboard',
     investmentEntryMode: 'market',
@@ -210,6 +217,7 @@ const state = {
     cloudSyncPending: false,
     cloudSyncState: 'checking',
     cloudSyncMessage: 'Verificando conta',
+    lastSyncedAt: 0,
     applyingCloudState: false,
     dataVersion: 0,
     localDataOwner: null,
@@ -228,16 +236,23 @@ function resolveAuthEnabled() {
     const appMode = params.get('app');
     try {
         if (authMode === 'firebase' || authMode === 'local') {
-            localStorage.setItem(AUTH_MODE_STORAGE_KEY, authMode);
-            return authMode === 'firebase';
+            const resolvedMode = authMode === 'local' && !LOCAL_AUTH_ALLOWED ? 'firebase' : authMode;
+            localStorage.setItem(AUTH_MODE_STORAGE_KEY, resolvedMode);
+            return resolvedMode === 'firebase';
         }
         if (appMode === 'pc' || appMode === 'iphone') {
             localStorage.setItem(AUTH_MODE_STORAGE_KEY, 'firebase');
             return true;
         }
-        return localStorage.getItem(AUTH_MODE_STORAGE_KEY) === 'firebase';
+        const savedMode = localStorage.getItem(AUTH_MODE_STORAGE_KEY);
+        if (savedMode === 'local' && !LOCAL_AUTH_ALLOWED) {
+            localStorage.setItem(AUTH_MODE_STORAGE_KEY, 'firebase');
+            return true;
+        }
+        return savedMode === 'firebase';
     } catch (error) {
-        return authMode === 'firebase' || appMode === 'pc' || appMode === 'iphone';
+        if (authMode === 'local' && LOCAL_AUTH_ALLOWED) return false;
+        return authMode === 'firebase' || appMode === 'pc' || appMode === 'iphone' || !LOCAL_AUTH_ALLOWED;
     }
 }
 
@@ -296,12 +311,19 @@ function cacheDom() {
         'month-filter',
         'theme-toggle',
         'export-json',
+        'export-backup',
+        'restore-backup',
+        'integrity-check',
+        'global-search',
+        'export-csv',
+        'close-month',
         'import-json',
         'clear-data',
         'transaction-form',
         'transaction-id',
         'form-title',
         'desc',
+        'tags',
         'amount',
         'type',
         'category',
@@ -449,6 +471,12 @@ function cacheDom() {
         'card-list',
         'planning-summary',
         'planning-list',
+        'goal-form',
+        'goal-name',
+        'goal-target',
+        'goal-saved',
+        'goal-submit',
+        'goal-list',
         'simulator-form',
         'scenario-type',
         'scenario-amount',
@@ -516,6 +544,12 @@ function bindAppEvents() {
 
     dom.themeToggle.addEventListener('click', toggleTheme);
     dom.exportJson.addEventListener('click', exportData);
+    dom.exportBackup.addEventListener('click', exportBackup);
+    dom.restoreBackup.addEventListener('click', restoreLatestBackup);
+    dom.integrityCheck.addEventListener('click', showDataIntegrityReport);
+    dom.globalSearch.addEventListener('click', runGlobalSearch);
+    dom.exportCsv.addEventListener('click', exportCsv);
+    dom.closeMonth.addEventListener('click', showMonthClosingReport);
     dom.importJson.addEventListener('change', importData);
     dom.clearData.addEventListener('click', clearData);
 
@@ -586,6 +620,8 @@ function bindAppEvents() {
     dom.cardForm.addEventListener('submit', handleCardSubmit);
     dom.cardCancel.addEventListener('click', resetCardForm);
     dom.cardList.addEventListener('click', handleCardClick);
+    dom.goalForm.addEventListener('submit', handleGoalSubmit);
+    dom.goalList.addEventListener('click', handleGoalClick);
 
     dom.scenarioType.addEventListener('change', () => {
         dom.scenarioInstallmentsField.classList.toggle('hidden', dom.scenarioType.value !== 'installment');
@@ -680,7 +716,7 @@ async function initializeAuthSession() {
         hideAuthError();
         state.user = hasLocalTestSession() ? { ...DEV_ACCESS } : null;
         state.localDataOwner = DEV_ACCESS.uid;
-        setSyncState(state.user ? 'Modo teste local' : 'Entre com adm / adm', 'offline');
+        setSyncState(state.user ? 'Modo local/teste ativo' : 'Modo local/teste ativo', 'offline');
         renderAuthUi();
         return;
     }
@@ -785,8 +821,8 @@ function renderAuthUi() {
         dom.authUserEmail.classList.toggle('hidden', !loggedIn);
         dom.authSignOut.classList.toggle('hidden', !loggedIn);
         dom.authUserEmail.textContent = loggedIn ? `${DEV_ACCESS.email} (teste)` : '';
-        dom.authModeTitle.textContent = 'Entrar no modo de teste';
-        dom.authModeSubtitle.textContent = 'Use login adm e senha adm para continuar os testes sem depender do Firebase Auth agora.';
+        dom.authModeTitle.textContent = 'Modo local/teste ativo';
+        dom.authModeSubtitle.textContent = 'Use login adm e senha adm apenas no localhost. Em producao, o app usa Firebase.';
         dom.authSubmit.disabled = false;
         dom.authSubmit.innerHTML = '<i class="fa-solid fa-right-to-bracket"></i><span>Entrar com adm</span>';
         updateSyncStatusElement();
@@ -865,7 +901,7 @@ async function handleAuthSubmit(event) {
         state.authReady = true;
         state.authMode = 'login';
         state.localDataOwner = DEV_ACCESS.uid;
-        setSyncState('Modo teste local', 'offline');
+        setSyncState('Modo local/teste ativo', 'offline');
         renderAuthUi();
         showToast('Login de teste liberado.');
         return;
@@ -915,7 +951,7 @@ async function handleSignOut() {
         state.user = null;
         state.authMode = 'login';
         hideAuthError();
-        setSyncState('Entre com adm / adm', 'offline');
+        setSyncState('Modo local/teste ativo', 'offline');
         renderAuthUi();
         showToast('Sessao de teste encerrada.');
         return;
@@ -997,6 +1033,7 @@ function applyCloudPayload(payload) {
     state.plannedBills = Array.isArray(incoming.plannedBills) ? incoming.plannedBills.map(normalizePlannedBill).filter(Boolean) : [];
     state.investments = Array.isArray(incoming.investments) ? incoming.investments.map(normalizeInvestment).filter(Boolean) : [];
     state.cards = Array.isArray(incoming.cards) ? incoming.cards.map(normalizeCard).filter(Boolean) : [];
+    state.goals = Array.isArray(incoming.goals) ? incoming.goals.map(normalizeGoal).filter(Boolean) : [];
     state.theme = prefs.theme === 'dark' ? 'dark' : 'light';
     state.activeTab = prefs.activeTab || 'dashboard';
     state.selectedMonth = getMonthKey(getTodayDate());
@@ -1018,7 +1055,8 @@ function buildCloudPayload() {
     const version = state.dataVersion || Date.now();
     state.dataVersion = version;
     return {
-        schemaVersion: 1,
+        appVersion: APP_VERSION,
+        schemaVersion: SCHEMA_VERSION,
         updatedAtMs: version,
         transactions: state.transactions,
         profile: state.profile,
@@ -1026,6 +1064,7 @@ function buildCloudPayload() {
         plannedBills: state.plannedBills,
         investments: state.investments,
         cards: state.cards,
+        goals: state.goals,
         prefs: {
             theme: state.theme,
             activeTab: state.activeTab
@@ -1062,6 +1101,7 @@ async function flushCloudSync() {
             updatedAt: firebaseFirestoreModule.serverTimestamp()
         }, { merge: true });
         state.cloudSyncPending = false;
+        state.lastSyncedAt = Date.now();
         setSyncState('Sincronizado', 'synced');
     } catch (error) {
         console.error('Erro ao sincronizar com Firestore:', error);
@@ -1090,6 +1130,8 @@ function updateSyncStatusElement() {
     if (!dom.syncStatus) return;
     dom.syncStatus.textContent = state.cloudSyncMessage;
     dom.syncStatus.className = `sync-pill ${state.cloudSyncState}`;
+    const lastSync = state.lastSyncedAt ? `Última sincronização: ${formatDateTime(state.lastSyncedAt)}` : 'Última sincronização: ainda não realizada';
+    dom.syncStatus.title = `${state.cloudSyncMessage}. ${lastSync}.`;
 }
 
 function showAuthError(message) {
@@ -1167,6 +1209,7 @@ function resetFinanceState() {
     state.plannedBills = [];
     state.investments = [];
     state.cards = [];
+    state.goals = [];
     state.editingId = null;
     state.editingReserveId = null;
     state.editingPlannedId = null;
@@ -1198,6 +1241,7 @@ function persistLocalStateOnly() {
     localStorage.setItem(STORAGE_KEYS.plannedBills, JSON.stringify(state.plannedBills));
     localStorage.setItem(STORAGE_KEYS.investments, JSON.stringify(state.investments));
     localStorage.setItem(STORAGE_KEYS.cards, JSON.stringify(state.cards));
+    localStorage.setItem(STORAGE_KEYS.goals, JSON.stringify(state.goals));
     localStorage.setItem(STORAGE_KEYS.prefs, JSON.stringify({
         theme: state.theme,
         activeTab: state.activeTab
@@ -1215,6 +1259,7 @@ function clearPersistedFinanceData(keepPrefs = false) {
     localStorage.removeItem(STORAGE_KEYS.plannedBills);
     localStorage.removeItem(STORAGE_KEYS.investments);
     localStorage.removeItem(STORAGE_KEYS.cards);
+    localStorage.removeItem(STORAGE_KEYS.goals);
     localStorage.removeItem(STORAGE_KEYS.meta);
     if (!keepPrefs) localStorage.removeItem(STORAGE_KEYS.prefs);
 }
@@ -1226,6 +1271,7 @@ function loadState() {
     state.plannedBills = loadArray(STORAGE_KEYS.plannedBills).map(normalizePlannedBill).filter(Boolean);
     state.investments = loadArray(STORAGE_KEYS.investments).map(normalizeInvestment).filter(Boolean);
     state.cards = loadArray(STORAGE_KEYS.cards).map(normalizeCard).filter(Boolean);
+    state.goals = loadArray(STORAGE_KEYS.goals).map(normalizeGoal).filter(Boolean);
 
     const prefs = loadJson(STORAGE_KEYS.prefs, {});
     state.theme = prefs.theme === 'dark' ? 'dark' : 'light';
@@ -1314,6 +1360,15 @@ function saveCards() {
     });
 }
 
+function saveGoals() {
+    markLocalChange();
+    persistLocalStateOnly();
+    queueCloudSync();
+    trackAnalyticsEvent('goals_saved', {
+        item_count: state.goals.length
+    });
+}
+
 function savePrefs() {
     markLocalChange();
     persistLocalStateOnly();
@@ -1329,7 +1384,8 @@ function saveAll() {
         reserve_count: state.reserves.length,
         investment_count: state.investments.length,
         planned_count: state.plannedBills.length,
-        card_count: state.cards.length
+        card_count: state.cards.length,
+        goal_count: state.goals.length
     });
 }
 
@@ -1489,6 +1545,32 @@ function normalizeCard(card) {
     };
 }
 
+function normalizeGoal(goal) {
+    if (!goal || typeof goal !== 'object') return null;
+    const target = normalizeMoney(goal.target);
+    if (target <= 0) return null;
+    const saved = normalizeMoney(goal.saved);
+
+    return {
+        id: String(goal.id || createId()),
+        name: String(goal.name || 'Meta financeira').trim(),
+        target,
+        saved: Math.min(saved, target),
+        createdAt: goal.createdAt || new Date().toISOString(),
+        updatedAt: goal.updatedAt || new Date().toISOString()
+    };
+}
+
+function normalizeTags(value) {
+    const raw = Array.isArray(value) ? value.join(',') : String(value || '');
+    return raw
+        .split(',')
+        .map((tag) => tag.trim().toLowerCase())
+        .filter(Boolean)
+        .filter((tag, index, rows) => rows.indexOf(tag) === index)
+        .slice(0, 8);
+}
+
 function normalizeTransaction(transaction) {
     if (!transaction || !transaction.desc || !transaction.date) return null;
 
@@ -1522,6 +1604,7 @@ function normalizeTransaction(transaction) {
         cardId: type === 'expense' && transaction.cardId ? String(transaction.cardId) : '',
         plannedBillId: type === 'expense' && transaction.plannedBillId ? String(transaction.plannedBillId) : '',
         reserveContributionId: type === 'expense' && transaction.reserveContributionId ? String(transaction.reserveContributionId) : '',
+        tags: normalizeTags(transaction.tags),
         virtual: Boolean(transaction.virtual),
         installmentGroupId: transaction.installmentGroupId || null,
         installmentIndex: transaction.installmentIndex || null,
@@ -1786,6 +1869,7 @@ function handleTransactionSubmit(event) {
 
     const desc = dom.desc.value.trim();
     const amount = normalizeMoney(dom.amount.value);
+    const tags = normalizeTags(dom.tags.value);
     const selectedType = dom.type.value;
     const date = dom.date.value;
     const paidMode = dom.paid.value;
@@ -1812,7 +1896,8 @@ function handleTransactionSubmit(event) {
         category: isExpense ? dom.category.value : null,
         necessity: isExpense ? dom.necessity.value : null,
         cardId: isExpense && purchaseMode !== 'booklet' ? dom.cardSelect.value : '',
-        reserveContributionId: linkedReserveId || ''
+        reserveContributionId: linkedReserveId || '',
+        tags
     };
 
     if (state.editingId) {
@@ -2084,6 +2169,7 @@ function startEdit(id) {
     dom.transactionId.value = id;
     dom.formTitle.textContent = 'Editar Transação';
     dom.desc.value = transaction.desc;
+    dom.tags.value = Array.isArray(transaction.tags) ? transaction.tags.join(', ') : '';
     dom.amount.value = transaction.amount;
     dom.type.value = transaction.type;
     dom.category.value = transaction.category || 'outros';
@@ -2124,6 +2210,7 @@ function resetTransactionForm() {
     state.categoryTouched = false;
     dom.transactionForm.reset();
     dom.transactionId.value = '';
+    dom.tags.value = '';
     dom.cardPaymentMode.value = 'single';
     dom.date.value = getTodayDate();
     dom.paid.value = 'auto';
@@ -2634,7 +2721,7 @@ function renderHistory() {
         rows = rows.filter((transaction) => {
             const category = CATEGORY_LABELS[transaction.category] || '';
             const card = getCardName(transaction.cardId);
-            return removeAccents(`${transaction.desc} ${category} ${card}`.toLowerCase()).includes(normalizedSearch);
+            return removeAccents(`${transaction.desc} ${category} ${card} ${(transaction.tags || []).join(' ')}`.toLowerCase()).includes(normalizedSearch);
         });
     }
 
@@ -2653,6 +2740,7 @@ function renderHistory() {
     if (tagFilter === 'recurring') rows = rows.filter((transaction) => transaction.recurringGroupId);
     if (tagFilter === 'planned') rows = rows.filter((transaction) => transaction.plannedBillId);
     if (tagFilter === 'card') rows = rows.filter((transaction) => transaction.cardId);
+    if (tagFilter && tagFilter.startsWith('#')) rows = rows.filter((transaction) => (transaction.tags || []).includes(tagFilter.slice(1)));
 
     rows.sort((a, b) => b.date.localeCompare(a.date) || b.createdAt.localeCompare(a.createdAt));
 
@@ -2729,11 +2817,12 @@ function appendBadges(container, transaction) {
     else if (!transaction.paid) container.appendChild(createBadge('Pendente', 'bg-slate-200 text-slate-700'));
     if (transaction.type === 'expense' && transaction.necessity === 'desire') container.appendChild(createBadge('Cortável', 'bg-yellow-100 text-yellow-800'));
     if (transaction.installmentGroupId) container.appendChild(createBadge(`Parcela ${transaction.installmentIndex}/${transaction.installmentTotal}`, 'bg-blue-100 text-blue-800'));
-    if (transaction.installmentGroupId && !transaction.cardId) container.appendChild(createBadge('CarnÃª', 'bg-amber-100 text-amber-800'));
+    if (transaction.installmentGroupId && !transaction.cardId) container.appendChild(createBadge('Carnê', 'bg-amber-100 text-amber-800'));
     if (transaction.recurringGroupId) container.appendChild(createBadge('Recorrente', 'bg-brand-50 text-brand-700'));
     if (transaction.plannedBillId) container.appendChild(createBadge('Conta prevista', 'bg-yellow-100 text-yellow-800'));
     if (transaction.cardId) container.appendChild(createBadge(getCardName(transaction.cardId), 'bg-blue-100 text-blue-800'));
     if (transaction.type === 'expense') container.appendChild(createBadge(CATEGORY_LABELS[transaction.category] || 'Outros', 'bg-white text-slate-600 border border-slate-200'));
+    (transaction.tags || []).forEach((tag) => container.appendChild(createBadge(`#${tag}`, 'bg-emerald-100 text-emerald-800')));
 }
 
 function resetFilters() {
@@ -4239,6 +4328,7 @@ function renderCards() {
 function renderPlanning() {
     clearElement(dom.planningSummary);
     clearElement(dom.planningList);
+    renderGoals();
 
     const months = buildFutureMonths(12);
     const negativeMonths = months.filter((month) => month.projectedBalance < 0);
@@ -4267,6 +4357,73 @@ function renderPlanning() {
             </div>
         `;
         dom.planningList.appendChild(row);
+    });
+}
+
+function handleGoalSubmit(event) {
+    event.preventDefault();
+    const goal = normalizeGoal({
+        name: dom.goalName.value,
+        target: dom.goalTarget.value,
+        saved: dom.goalSaved.value
+    });
+
+    if (!goal) {
+        showToast('Preencha nome e valor da meta.');
+        return;
+    }
+
+    state.goals.push(goal);
+    saveGoals();
+    dom.goalForm.reset();
+    renderPlanning();
+    showToast('Meta salva.');
+}
+
+function handleGoalClick(event) {
+    const button = event.target.closest('[data-action]');
+    if (!button) return;
+    if (button.dataset.action !== 'delete-goal') return;
+    state.goals = state.goals.filter((goal) => goal.id !== button.dataset.id);
+    saveGoals();
+    renderPlanning();
+    showToast('Meta removida.');
+}
+
+function renderGoals() {
+    clearElement(dom.goalList);
+
+    if (state.goals.length === 0) {
+        dom.goalList.appendChild(createEmptyBlock('Nenhuma meta criada ainda.'));
+        return;
+    }
+
+    state.goals.forEach((goal) => {
+        const percent = Math.min(100, goal.saved / Math.max(1, goal.target) * 100);
+        const row = document.createElement('article');
+        row.className = 'entity-card';
+        row.innerHTML = `
+            <div class="entity-body">
+                <div class="entity-title-row">
+                    <strong>${escapeHtml(goal.name)}</strong>
+                    <span>${Math.round(percent)}%</span>
+                </div>
+                <div class="bar-track mt-3">
+                    <div class="bar-fill bg-green-500" style="width: ${percent}%"></div>
+                </div>
+                <div class="forecast-meta mt-3">
+                    <span>Guardado ${formatCurrency(goal.saved)}</span>
+                    <span>Meta ${formatCurrency(goal.target)}</span>
+                    <span>Faltam ${formatCurrency(Math.max(0, goal.target - goal.saved))}</span>
+                </div>
+            </div>
+            <div class="entity-actions">
+                <button type="button" class="row-action danger" data-action="delete-goal" data-id="${goal.id}" aria-label="Excluir meta">
+                    <i class="fa-solid fa-trash"></i>
+                </button>
+            </div>
+        `;
+        dom.goalList.appendChild(row);
     });
 }
 
@@ -4383,29 +4540,201 @@ function getCardUsage(card, monthKey) {
     };
 }
 
-function exportData() {
-    const payload = {
+function createBackupPayload(reason = 'manual') {
+    return {
+        appVersion: APP_VERSION,
+        schemaVersion: SCHEMA_VERSION,
         version: 5,
+        createdAt: new Date().toISOString(),
         exportedAt: new Date().toISOString(),
+        reason,
         profile: state.profile,
         reserves: state.reserves,
         plannedBills: state.plannedBills,
         investments: state.investments,
         cards: state.cards,
+        goals: state.goals,
         transactions: state.transactions
     };
+}
 
+function downloadJson(payload, filename) {
     const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `financas-${getTodayDate()}.json`;
+    link.download = filename;
     link.click();
     URL.revokeObjectURL(url);
+}
+
+function exportData() {
+    const payload = createBackupPayload('export');
+    downloadJson(payload, `financas-${getTodayDate()}.json`);
     trackAnalyticsEvent('data_exported', {
         transaction_count: state.transactions.length
     });
     showToast('Arquivo exportado.');
+}
+
+function exportCsv() {
+    const rows = [
+        ['data', 'descricao', 'tipo', 'valor', 'categoria', 'status', 'cartao', 'tags'],
+        ...state.transactions.map((transaction) => [
+            transaction.date,
+            transaction.desc,
+            transaction.type,
+            String(transaction.amount).replace('.', ','),
+            transaction.category || '',
+            transaction.paid ? 'pago' : 'pendente',
+            getCardName(transaction.cardId),
+            (transaction.tags || []).join('|')
+        ])
+    ];
+    const csv = rows.map((row) => row.map((cell) => `"${String(cell || '').replace(/"/g, '""')}"`).join(';')).join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `transacoes-${getTodayDate()}.csv`;
+    link.click();
+    URL.revokeObjectURL(url);
+    showToast('CSV exportado.');
+}
+
+function exportBackup() {
+    const payload = createBackupPayload('backup');
+    storeLocalBackup(payload);
+    downloadJson(payload, `backup-financeiro-${getTodayDate()}.json`);
+    trackAnalyticsEvent('backup_exported', {
+        transaction_count: state.transactions.length
+    });
+    showToast('Backup exportado e guardado no histórico local.');
+}
+
+function runGlobalSearch() {
+    const query = window.prompt('Buscar em transações, cartões, contas, reservas, investimentos e metas:');
+    const normalizedQuery = removeAccents(String(query || '').trim().toLowerCase());
+    if (!normalizedQuery) return;
+
+    const results = [];
+    state.transactions.forEach((item) => {
+        const text = `${item.desc} ${item.category || ''} ${(item.tags || []).join(' ')}`;
+        if (removeAccents(text.toLowerCase()).includes(normalizedQuery)) results.push(`Transação: ${item.desc} (${formatDate(item.date)})`);
+    });
+    state.cards.forEach((item) => {
+        if (removeAccents(item.name.toLowerCase()).includes(normalizedQuery)) results.push(`Cartão: ${item.name}`);
+    });
+    state.plannedBills.forEach((item) => {
+        if (removeAccents(item.name.toLowerCase()).includes(normalizedQuery)) results.push(`Conta prevista: ${item.name}`);
+    });
+    state.reserves.forEach((item) => {
+        if (removeAccents(item.name.toLowerCase()).includes(normalizedQuery)) results.push(`Reserva: ${item.name}`);
+    });
+    state.investments.forEach((item) => {
+        if (removeAccents(`${item.name} ${item.code || ''}`.toLowerCase()).includes(normalizedQuery)) results.push(`Investimento: ${item.name}`);
+    });
+    state.goals.forEach((item) => {
+        if (removeAccents(item.name.toLowerCase()).includes(normalizedQuery)) results.push(`Meta: ${item.name}`);
+    });
+
+    window.alert(results.length ? `Resultados encontrados:\n\n${results.slice(0, 20).join('\n')}` : 'Nenhum resultado encontrado.');
+}
+
+function showMonthClosingReport() {
+    const stats = buildMonthStats(state.selectedMonth);
+    const pending = stats.transactions.filter((transaction) => !transaction.paid);
+    const cardBill = Object.values(stats.byCard).reduce((sum, value) => sum + value, 0);
+    const reserveAdded = state.transactions
+        .filter((transaction) => transaction.reserveContributionId && getMonthKey(transaction.date) === state.selectedMonth)
+        .reduce((sum, transaction) => sum + transaction.amount, 0);
+
+    window.alert([
+        `Fechamento de ${formatMonthLabel(state.selectedMonth)}`,
+        '',
+        `Resultado previsto: ${formatCurrency(stats.projectedBalance)}`,
+        `Resultado realizado: ${formatCurrency(stats.cashBalance)}`,
+        `Contas pendentes: ${pending.length}`,
+        `Faturas abertas: ${formatCurrency(cardBill)}`,
+        `Reserva adicionada: ${formatCurrency(reserveAdded)}`,
+        `Renda comprometida: ${Math.round(stats.commitment)}%`
+    ].join('\n'));
+}
+
+function hasFinanceData() {
+    return Boolean(
+        state.transactions.length
+        || state.reserves.length
+        || state.plannedBills.length
+        || state.investments.length
+        || state.cards.length
+        || state.profile.expectedIncome
+        || state.profile.name
+    );
+}
+
+function storeLocalBackup(payload) {
+    const history = getLocalBackupHistory();
+    history.unshift({
+        id: createId(),
+        createdAt: payload.createdAt || new Date().toISOString(),
+        appVersion: payload.appVersion || APP_VERSION,
+        schemaVersion: payload.schemaVersion || 1,
+        transactionCount: Array.isArray(payload.transactions) ? payload.transactions.length : 0,
+        payload
+    });
+    localStorage.setItem(STORAGE_KEYS.backups, JSON.stringify(history.slice(0, 5)));
+}
+
+function getLocalBackupHistory() {
+    const saved = loadJson(STORAGE_KEYS.backups, []);
+    return Array.isArray(saved) ? saved.filter((item) => item && item.payload) : [];
+}
+
+function validateBackupPayload(payload) {
+    const incoming = migrateBackupPayload(Array.isArray(payload) ? { transactions: payload } : payload);
+    if (!incoming || typeof incoming !== 'object') throw new Error('Formato inválido');
+    if (incoming.schemaVersion && Number(incoming.schemaVersion) > SCHEMA_VERSION) {
+        throw new Error('Backup criado em uma versão mais nova do app');
+    }
+
+    const normalized = {
+        profile: incoming.profile ? normalizeProfile(incoming.profile) : { ...DEFAULT_PROFILE },
+        transactions: Array.isArray(incoming.transactions) ? incoming.transactions.map(normalizeTransaction).filter(Boolean) : [],
+        reserves: Array.isArray(incoming.reserves) ? incoming.reserves.map(normalizeReserve).filter(Boolean) : [],
+        plannedBills: Array.isArray(incoming.plannedBills) ? incoming.plannedBills.map(normalizePlannedBill).filter(Boolean) : [],
+        investments: Array.isArray(incoming.investments) ? incoming.investments.map(normalizeInvestment).filter(Boolean) : [],
+        cards: Array.isArray(incoming.cards) ? incoming.cards.map(normalizeCard).filter(Boolean) : [],
+        goals: Array.isArray(incoming.goals) ? incoming.goals.map(normalizeGoal).filter(Boolean) : []
+    };
+
+    if (!normalized.transactions.length && !normalized.reserves.length && !normalized.plannedBills.length && !normalized.investments.length && !normalized.cards.length && !normalized.goals.length && !normalized.profile.expectedIncome && !normalized.profile.name) {
+        throw new Error('Backup sem dados financeiros válidos');
+    }
+
+    return normalized;
+}
+
+function migrateBackupPayload(payload) {
+    if (!payload || typeof payload !== 'object') return payload;
+    const migrated = { ...payload };
+    if (!migrated.schemaVersion) migrated.schemaVersion = 1;
+    if (migrated.schemaVersion === 1) {
+        migrated.schemaVersion = 2;
+        migrated.appVersion = migrated.appVersion || migrated.version || 'legado';
+        migrated.createdAt = migrated.createdAt || migrated.exportedAt || new Date().toISOString();
+    }
+    return migrated;
+}
+
+function applyImportedPayload(normalized, replace) {
+    state.transactions = replace ? normalized.transactions : mergeById(state.transactions, normalized.transactions);
+    state.reserves = replace ? normalized.reserves : mergeById(state.reserves, normalized.reserves);
+    state.plannedBills = replace ? normalized.plannedBills : mergeById(state.plannedBills, normalized.plannedBills);
+    state.investments = replace ? normalized.investments : mergeById(state.investments, normalized.investments);
+    state.cards = replace ? normalized.cards : mergeById(state.cards, normalized.cards);
+    state.goals = replace ? normalized.goals : mergeById(state.goals, normalized.goals);
+    state.profile = replace ? normalized.profile : normalizeProfile({ ...state.profile, ...normalized.profile });
 }
 
 function importData(event) {
@@ -4416,22 +4745,11 @@ function importData(event) {
     reader.onload = () => {
         try {
             const parsed = JSON.parse(reader.result);
-            const incoming = Array.isArray(parsed) ? { transactions: parsed } : parsed;
-            if (!incoming || typeof incoming !== 'object') throw new Error('Formato inválido');
+            const normalized = validateBackupPayload(parsed);
 
             const replace = window.confirm('OK para substituir tudo. Cancelar para mesclar com os dados atuais.');
-            const importedTransactions = Array.isArray(incoming.transactions) ? incoming.transactions.map(normalizeTransaction).filter(Boolean) : [];
-            const importedReserves = Array.isArray(incoming.reserves) ? incoming.reserves.map(normalizeReserve).filter(Boolean) : [];
-            const importedPlanned = Array.isArray(incoming.plannedBills) ? incoming.plannedBills.map(normalizePlannedBill).filter(Boolean) : [];
-            const importedInvestments = Array.isArray(incoming.investments) ? incoming.investments.map(normalizeInvestment).filter(Boolean) : [];
-            const importedCards = Array.isArray(incoming.cards) ? incoming.cards.map(normalizeCard).filter(Boolean) : [];
-
-            state.transactions = replace ? importedTransactions : mergeById(state.transactions, importedTransactions);
-            state.reserves = replace ? importedReserves : mergeById(state.reserves, importedReserves);
-            state.plannedBills = replace ? importedPlanned : mergeById(state.plannedBills, importedPlanned);
-            state.investments = replace ? importedInvestments : mergeById(state.investments, importedInvestments);
-            state.cards = replace ? importedCards : mergeById(state.cards, importedCards);
-            if (incoming.profile) state.profile = normalizeProfile(replace ? incoming.profile : { ...state.profile, ...incoming.profile });
+            if (hasFinanceData()) storeLocalBackup(createBackupPayload('before-import'));
+            applyImportedPayload(normalized, replace);
 
             saveAll();
             hydrateForms();
@@ -4443,12 +4761,59 @@ function importData(event) {
             showToast('Dados importados.');
         } catch (error) {
             console.error(error);
-            showToast('Não foi possível importar esse arquivo.');
+            showToast(error.message || 'Não foi possível importar esse arquivo.');
         } finally {
             dom.importJson.value = '';
         }
     };
     reader.readAsText(file);
+}
+
+function restoreLatestBackup() {
+    const [latest] = getLocalBackupHistory();
+    if (!latest) {
+        showToast('Nenhum backup local encontrado.');
+        return;
+    }
+
+    const confirmation = window.prompt(`Digite RESTAURAR para voltar ao backup de ${formatDateTime(latest.createdAt)}.`);
+    if (confirmation !== 'RESTAURAR') {
+        showToast('Restauração cancelada.');
+        return;
+    }
+
+    try {
+        const normalized = validateBackupPayload(latest.payload);
+        if (hasFinanceData()) storeLocalBackup(createBackupPayload('before-restore'));
+        applyImportedPayload(normalized, true);
+        saveAll();
+        hydrateForms();
+        render();
+        showToast('Backup local restaurado.');
+    } catch (error) {
+        console.error(error);
+        showToast('Não foi possível restaurar esse backup.');
+    }
+}
+
+function showDataIntegrityReport() {
+    const report = buildDataIntegrityReport();
+    const lines = report.map((item) => `${item.label}: ${item.ok ? 'OK' : item.message}`);
+    window.alert(`Integridade dos dados\n\n${lines.join('\n')}`);
+}
+
+function buildDataIntegrityReport() {
+    const backups = getLocalBackupHistory();
+    return [
+        { label: 'Transações', ok: state.transactions.every((item) => normalizeTransaction(item)), message: 'há transações inválidas' },
+        { label: 'Cartões', ok: state.cards.every((item) => normalizeCard(item)), message: 'há cartões inválidos' },
+        { label: 'Contas previstas', ok: state.plannedBills.every((item) => normalizePlannedBill(item)), message: 'há contas inválidas' },
+        { label: 'Reservas', ok: state.reserves.every((item) => normalizeReserve(item)), message: 'há reservas inválidas' },
+        { label: 'Investimentos', ok: state.investments.every((item) => normalizeInvestment(item)), message: 'há investimentos inválidos' },
+        { label: 'Metas', ok: state.goals.every((item) => normalizeGoal(item)), message: 'há metas inválidas' },
+        { label: 'Backup', ok: backups.length > 0, message: 'nenhum backup local salvo' },
+        { label: 'Firebase', ok: !AUTH_ENABLED || Boolean(state.user), message: 'conta não conectada' }
+    ];
 }
 
 function mergeById(current, imported) {
@@ -4464,16 +4829,20 @@ function clearData() {
         return;
     }
 
-    const confirmed = window.confirm(AUTH_ENABLED && state.user
-        ? 'Limpar todos os dados desta conta em todos os dispositivos conectados?'
-        : 'Limpar todos os dados salvos neste navegador?');
-    if (!confirmed) return;
+    const confirmation = window.prompt(AUTH_ENABLED && state.user
+        ? 'Digite APAGAR para limpar todos os dados desta conta em todos os dispositivos conectados.'
+        : 'Digite APAGAR para limpar todos os dados salvos neste navegador.');
+    if (confirmation !== 'APAGAR') {
+        showToast('Limpeza cancelada.');
+        return;
+    }
 
     state.transactions = [];
     state.reserves = [];
     state.plannedBills = [];
     state.investments = [];
     state.cards = [];
+    state.goals = [];
     state.profile = { ...DEFAULT_PROFILE };
     saveAll();
     hydrateForms();
@@ -4843,3 +5212,4 @@ function hideToast() {
     dom.toast.textContent = '';
     dom.toast.classList.add('hidden');
 }
+

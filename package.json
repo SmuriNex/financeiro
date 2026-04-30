@@ -1,5 +1,14 @@
 {
+  "scripts": {
+    "serve": "python serve_local.py",
+    "test": "playwright test",
+    "test:year": "node tests/year-audit.js",
+    "test:ui": "playwright test --ui",
+    "test:headed": "playwright test --headed",
+    "deploy": "firebase deploy"
+  },
   "devDependencies": {
+    "@playwright/test": "^1.59.1",
     "playwright": "^1.59.1"
   }
 }

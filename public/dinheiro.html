@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
@@ -21,7 +21,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="assets/css/styles.css?v=20260429-pwa-fix2">
+    <link rel="stylesheet" href="assets/css/styles.css?v=1.2.0">
     <script>
         tailwind.config = {
             safelist: [
@@ -112,6 +112,30 @@
 
                     <button id="export-json" class="toolbar-button" type="button" title="Exportar dados" aria-label="Exportar dados">
                         <i class="fa-solid fa-file-export"></i>
+                    </button>
+
+                    <button id="export-backup" class="toolbar-button" type="button" title="Exportar backup com data" aria-label="Exportar backup com data">
+                        <i class="fa-solid fa-shield-halved"></i>
+                    </button>
+
+                    <button id="restore-backup" class="toolbar-button" type="button" title="Restaurar último backup local" aria-label="Restaurar último backup local">
+                        <i class="fa-solid fa-clock-rotate-left"></i>
+                    </button>
+
+                    <button id="integrity-check" class="toolbar-button" type="button" title="Verificar integridade dos dados" aria-label="Verificar integridade dos dados">
+                        <i class="fa-solid fa-list-check"></i>
+                    </button>
+
+                    <button id="global-search" class="toolbar-button" type="button" title="Busca global" aria-label="Busca global">
+                        <i class="fa-solid fa-magnifying-glass"></i>
+                    </button>
+
+                    <button id="export-csv" class="toolbar-button" type="button" title="Exportar CSV" aria-label="Exportar CSV">
+                        <i class="fa-solid fa-file-csv"></i>
+                    </button>
+
+                    <button id="close-month" class="toolbar-button" type="button" title="Fechamento do mês" aria-label="Fechamento do mês">
+                        <i class="fa-solid fa-lock"></i>
                     </button>
 
                     <label class="toolbar-button cursor-pointer" for="import-json" title="Importar dados" aria-label="Importar dados">
@@ -417,6 +441,12 @@
                                 <label class="form-label" for="desc">Descrição</label>
                                 <input type="text" id="desc" required placeholder="Ex: Salário, Conta de Luz" class="form-control">
                                 <p id="auto-category-hint" class="field-hint"></p>
+                            </div>
+
+                            <div>
+                                <label class="form-label" for="tags">Tags</label>
+                                <input type="text" id="tags" placeholder="Ex: casa, trabalho, emergência" class="form-control">
+                                <p class="field-hint">Separe por vírgulas para busca e organização.</p>
                             </div>
 
                             <div>
@@ -1060,6 +1090,23 @@
 
         <section class="tab-panel" data-panel="planning">
             <section class="surface-card p-6 mb-6">
+                <div class="card-heading border-emerald-500">
+                    <i class="fa-solid fa-bullseye text-emerald-500"></i>
+                    <h2>Metas financeiras</h2>
+                </div>
+                <form id="goal-form" class="grid grid-cols-1 md:grid-cols-5 gap-3 mt-5">
+                    <input id="goal-name" type="text" class="form-control md:col-span-2" placeholder="Ex: Juntar R$ 5.000">
+                    <input id="goal-target" type="text" inputmode="decimal" class="form-control" placeholder="Meta">
+                    <input id="goal-saved" type="text" inputmode="decimal" class="form-control" placeholder="Guardado">
+                    <button id="goal-submit" type="submit" class="primary-button">
+                        <i class="fa-solid fa-plus"></i>
+                        <span>Salvar meta</span>
+                    </button>
+                </form>
+                <div id="goal-list" class="entity-list mt-5"></div>
+            </section>
+
+            <section class="surface-card p-6 mb-6">
                 <div class="card-heading border-purple-500">
                     <i class="fa-solid fa-route text-purple-500"></i>
                     <h2>Planejamento futuro</h2>
@@ -1139,7 +1186,7 @@
                 </div>
             </div>
 
-            <p id="auth-mode-subtitle" class="auth-subtitle">Use login adm e senha adm para continuar os testes sem depender do Firebase Auth agora.</p>
+            <p id="auth-mode-subtitle" class="auth-subtitle">Entre com sua conta para sincronizar os dados entre PC e celular.</p>
 
             <div id="auth-loading" class="auth-loading hidden">
                 <i class="fa-solid fa-circle-notch"></i>
@@ -1149,12 +1196,12 @@
             <form id="auth-form" class="auth-form">
                 <div>
                     <label class="form-label" for="auth-email">Login</label>
-                    <input id="auth-email" type="text" class="form-control" placeholder="adm" autocomplete="username" required>
+                    <input id="auth-email" type="text" class="form-control" placeholder="voce@email.com" autocomplete="username" required>
                 </div>
 
                 <div>
                     <label class="form-label" for="auth-password">Senha</label>
-                    <input id="auth-password" type="password" class="form-control" placeholder="adm" autocomplete="current-password" required>
+                    <input id="auth-password" type="password" class="form-control" placeholder="Sua senha" autocomplete="current-password" required>
                 </div>
 
                 <div id="auth-confirm-row" class="hidden">
@@ -1166,7 +1213,7 @@
 
                 <button id="auth-submit" class="primary-button auth-submit" type="submit">
                     <i class="fa-solid fa-right-to-bracket"></i>
-                    <span>Entrar com adm</span>
+                    <span>Entrar</span>
                 </button>
             </form>
 
@@ -1174,6 +1221,7 @@
         </section>
     </div>
 
-    <script src="assets/js/app.js?v=20260429-pwa-fix2"></script>
+    <script src="assets/js/app.js?v=1.2.0"></script>
 </body>
 </html>
+
